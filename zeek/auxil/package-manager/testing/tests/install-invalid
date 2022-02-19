@@ -1,0 +1,22 @@
+# Test invalid package names and paths
+# @TEST-EXEC-FAIL: bash %INPUT 2>output
+# @TEST-EXEC: btest-diff output
+
+CONFIG=$(pwd)/config
+mkdir -p invalid
+
+cp -R ./packages/bar ./invalid/\ fronting-whitespace
+(cd ./invalid/\ fronting-whitespace && zkg --config=$CONFIG install --force .)
+
+cp -R ./packages/bar './invalid/trailing-whitespace '
+(cd './invalid/trailing-whitespace ' && zkg --config=$CONFIG install --force . )
+
+zkg --config=$CONFIG install --force ./packages/doesntexist
+
+mkdir ./packages/notagitrepo
+zkg --config=$CONFIG install --force ./packages/notagitrepo
+
+mkdir ./packages/dirtyrepo
+( cd ./packages/dirtyrepo && git init . && touch README && git add README && git commit -m "Initial commit")
+echo README > ./packages/dirtyrepo/README
+zkg --config=$CONFIG install --force ./packages/dirtyrepo

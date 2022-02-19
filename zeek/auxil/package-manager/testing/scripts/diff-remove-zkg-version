@@ -1,0 +1,8 @@
+#! /usr/bin/env bash
+#
+# Suppress lines including our zkg version, based on the VERSION file
+# at the toplevel of the source tree.
+
+ver=$(cat $TEST_BASE/../VERSION)
+grep -v "$ver"
+exit 0

@@ -1,0 +1,23 @@
+%%{
+#include <cstring>
+#include <cctype>
+#include "zeek/util.h"
+#include "zeek/ZeekString.h"
+#include "zeek/Val.h"
+%%}
+
+module Demo;
+
+function rot13%(s: string%) : string
+    %{
+    char* rot13 = util::copy_string(s->CheckString());
+
+    for ( char* p = rot13; *p; p++ )
+        {
+        char b = islower(*p) ? 'a' : 'A';
+        *p  = (*p - b + 13) % 26 + b;
+        }
+
+    auto zs = new zeek::String(1, reinterpret_cast<byte_vec>(rot13), strlen(rot13));
+    return make_intrusive<StringVal>(zs);
+    %}

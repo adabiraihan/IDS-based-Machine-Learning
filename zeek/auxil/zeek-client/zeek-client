@@ -1,0 +1,637 @@
+#! /usr/bin/env python3
+"""
+This is an incomplete, prototypical implementation of a Zeek cluster
+controller, as sketched in the following architecture design doc:
+
+https://docs.google.com/document/d/1r0wXnihx4yESOpLJ87Wh2g1V-aHOFUkbgiFe8RHJpZo/edit
+
+Work on this client is currently in progress and maturing over the course of
+the Zeek 4.x series. Feedback is welcome. This implementation adopts many of
+the idioms and primitives also used by the zkg package manager.
+"""
+# pylint: disable=invalid-name, missing-function-docstring, too-few-public-methods
+# pylint: disable=too-many-instance-attributes, too-many-arguments, no-self-use
+
+import argparse
+import configparser
+import enum
+import ipaddress
+import json
+import logging
+import os.path
+import select
+import sys
+import uuid
+
+LOG = logging.getLogger(__name__)
+LOG.addHandler(logging.NullHandler())
+
+ZEEK_CLIENT_DEFAULT_CONTROLLER = '127.0.0.1:2150'
+ZEEK_CLIENT_CONTROLLER_TOPIC = 'zeek/cluster-control/controller'
+
+# Prepend the Python path of the Zeek installation. This ensures we find the
+# Zeek-bundled Broker Python bindings, if available, before any system-wide
+# ones.
+ZEEK_PYTHON_DIR = '@PY_MOD_INSTALL_DIR@'
+if os.path.isdir(ZEEK_PYTHON_DIR):
+    sys.path.insert(0, os.path.abspath(ZEEK_PYTHON_DIR))
+
+try:
+    import broker
+except ImportError:
+    print('error: zeek-client requires the Python Broker bindings.\n'
+          'Make sure your Zeek build includes them.')
+    sys.exit(1)
+
+
+class Event(broker.zeek.Event):
+    """A specialization of Broker's Event class to make it printable, make arguments
+    and their types explicit, and allow us to register instances as known event
+    types."""
+    # XXX at least the printability could go into Broker bindings
+
+    # Contextualize the event: name, argument names, and argument types (in
+    # Broker rendition).
+    NAME = None
+    ARG_NAMES = []
+    ARG_TYPES = []
+
+    def __init__(self, *args):
+        """Creates a Zeek event object.
+
+        This expects the number of arguments contextualized above. The event
+        name is not required since it's defined implicitly via the event class
+        receiving the arguments.
+
+        Raises:
+            TypeError: when the given arguments, or number of arguments, don't
+                match the expected ARG_TYPES or their number.
+        """
+        if len(args) != len(self.ARG_NAMES):
+            raise TypeError('event argument length mismatch: have %d, expected %d'
+                            % (len(args), len(self.ARG_NAMES)))
+        if len(self.ARG_NAMES) != len(self.ARG_TYPES):
+            raise TypeError('number of event argument names and types must match')
+
+        for tpl in zip(args, self.ARG_TYPES, range(len(self.ARG_TYPES))):
+            # The data model is permissive regarding list vs tuple, so accept
+            # lists in stead of tuple:
+            typ0, typ1 = type(tpl[0]), tpl[1]
+            if typ1 == list and typ0 == tuple:
+                typ0 = list
+            if typ0 != typ1:
+                raise TypeError('event type mismatch: argument %d is %s, should be %s'
+                                % (tpl[2]+1, typ0, typ1))
+        args = [self.NAME] + list(args)
+        super().__init__(*args)
+
+    def __getattr__(self, name):
+        try:
+            idx = self.ARG_NAMES.index(name)
+            return self.args()[idx]
+        except ValueError as err:
+            raise AttributeError from err
+
+    def __str__(self):
+        # A list of pairs (argument name, typename)
+        zeek_style_args = zip(self.ARG_NAMES, [str(type(arg)) for arg in self.args()])
+        # That list, with each item now a string "<name>: <typename"
+        zeek_style_arg_strings = [': '.join(arg) for arg in zeek_style_args]
+        # A Zeek-looking event signature
+        return self.name() + '(' + ', '.join(zeek_style_arg_strings) + ')'
+
+
+class EventRegistry:
+    """Functionality for event types and to instantiate events from data."""
+
+    # Map from Zeek-level event names to Event classes. The make_event()
+    # function uses this map to instantiate the right event class from
+    # received Broker data.
+    EVENT_TYPES = {}
+
+    @staticmethod
+    def make_event_class(name, arg_names, arg_types):
+        """Factory function to generate a Zeek event class.
+
+        Given an event name, event arguments, and corresponding argument types,
+        the function generates a new Event class, registers it, and returns it.
+        """
+        res = type(name, (Event,), {})
+
+        res.NAME = name
+        res.ARG_NAMES = arg_names
+        res.ARG_TYPES = arg_types
+
+        # Register the new event type
+        EventRegistry.EVENT_TYPES[name] = res
+
+        return res
+
+    @staticmethod
+    def make_event(args):
+        """Transform Broker-level data into Zeek event instance.
+
+        The function takes received Broker-level data, instantiates a
+        Broker-level event object from them, and uses the identified name to
+        create a new Zeek event instance. Returns None if the event wasn't
+        understood.
+        """
+        evt = broker.zeek.Event(args)
+        args = evt.args()
+
+        if evt.name() not in EventRegistry.EVENT_TYPES:
+            LOG.warning('received unexpected event "%s", skipping', evt.name())
+            return None
+
+        LOG.debug('received event "%s"', evt.name())
+        return EventRegistry.EVENT_TYPES[evt.name()](*args)
+
+
+class events:
+    """A scope to define event types we understand. Could become a module."""
+
+    GetInstancesRequest = EventRegistry.make_event_class(
+        'ClusterController::API::get_instances_request',
+        ('reqid',), (str,))
+
+    GetInstancesResponse = EventRegistry.make_event_class(
+        'ClusterController::API::get_instances_response',
+        ('reqid', 'instances'), (str, tuple))
+
+    SetConfigurationRequest = EventRegistry.make_event_class(
+        'ClusterController::API::set_configuration_request',
+        ('reqid', 'config'), (str, tuple))
+
+    SetConfigurationResponse = EventRegistry.make_event_class(
+        'ClusterController::API::set_configuration_response',
+        ('reqid', 'results'), (str, tuple))
+
+
+class Controller:
+    """A class representing our Broker connection to the Zeek cluster controller."""
+
+    def __init__(self, controller_host, controller_port,
+                 controller_topic=ZEEK_CLIENT_CONTROLLER_TOPIC):
+        self.controller_host = controller_host
+        self.controller_port = controller_port
+        self.controller_topic = controller_topic
+        self.ep = broker.Endpoint()
+        self.sub = self.ep.make_subscriber(controller_topic)
+        self.ssub = self.ep.make_status_subscriber(True)
+
+        self.poll = select.poll()
+        self.poll.register(self.sub.fd())
+        self.poll.register(self.ssub.fd())
+
+    def connect(self):
+        self.ep.peer(self.controller_host, self.controller_port, 0.0)
+
+        # Wait until connection is established.
+        status = self.ssub.get()
+
+        if not (isinstance(status, broker.Status) and status.code() == broker.SC.PeerAdded):
+            print('error: could not connect to controller')
+            return False
+
+        return True
+
+    def publish(self, event):
+        """Publishes the given event to the controller topic.
+
+        Args:
+            event (Event): the event to publish.
+        """
+        self.ep.publish(self.controller_topic, event)
+
+    def receive(self, timeout_secs=10):
+        """Receive an event from the controller's event subscriber.
+
+        Args:
+            timeout_secs (int): number of seconds before we time out.
+                Has sematics of the poll.poll() timeout argument, i.e.
+                None and negative values mean no timeout. The default
+                is a 10-second timeout.
+
+        Returns:
+            Instance of one of the Event classes defined for the client,
+            or None if timeout_secs passed before anything arrived.
+        """
+        timeout_msecs = timeout_secs
+        if timeout_msecs is not None:
+            timeout_msecs *= 1000
+
+        # XXX this is intentionally still very basic -- no event dispatch
+        # mechanism, event loop, etc. The extent to which we require these will
+        # become clearer soon. For now we just poll on the fds of the subscriber
+        # and status subscriber so we get notified when something arrives or an
+        # error occurs. Might have to handle POLLERR and POLLHUP here too to be
+        # more robust still.
+        while True:
+            try:
+                resps = self.poll.poll(timeout_msecs)
+            except OSError as err:
+                return None, 'polling error: {}'.format(err)
+
+            if not resps:
+                return None, 'connection timed out'
+
+            for fdesc, event in resps:
+                if fdesc == self.sub.fd() and event & select.POLLIN:
+                    _, data = self.sub.get()
+
+                    res = EventRegistry.make_event(data)
+                    if res is not None:
+                        return res, ''
+
+                if fdesc == self.ssub.fd() and event & select.POLLIN:
+                    status = self.ssub.get()
+                    return None, 'status change: {}'.format(status)
+
+
+class Role(enum.Enum):
+    """Equivalent of Supervisor::ClusterRole enum in Zeek"""
+    NONE = 0
+    LOGGER = 1
+    MANAGER = 2
+    PROXY = 3
+    WORKER = 4
+
+
+class State(enum.Enum):
+    """Equivalent of ClusterController::Types::State enum in Zeek"""
+    RUNNING = 0
+    STOPPED = 1
+    FAILED = 2
+    CRASHED = 3
+    UNKNOWN = 4
+
+
+class BrokerType:
+    """Base class for types we can instantiate from or render to the
+    Python-level Broker data model.
+
+    See the Python type table and general Broker data model below for details:
+    https://docs.zeek.org/projects/broker/en/current/python.html#data-model
+    https://docs.zeek.org/projects/broker/en/current/data.html
+    """
+    def to_broker(self):
+        """Returns a Broker-compatible rendition of this instance."""
+        return None
+
+    @staticmethod
+    def from_broker(broker_data): # pylint: disable=unused-argument
+        """Returns an instance of the type given Broker data."""
+        return None
+
+
+class Option(BrokerType):
+    """Equivalent of ClusterController::Types::Option."""
+
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def to_broker(self):
+        return (self.name, self.value)
+
+
+class Instance(BrokerType):
+    """Equivalent of ClusterController::Types::Instance."""
+
+    def __init__(self, name, addr, port):
+        self.name = name
+        self.addr = addr
+        self.port = port
+
+    def to_broker(self):
+        return (self.name, ipaddress.ip_address(self.addr),
+                broker.Port(int(self.port), broker.Port.TCP))
+
+
+class Node(BrokerType):
+    """Equivalent of ClusterController::Types::Node."""
+
+    class HashableDict(dict):
+        """Ad-hoc dict adaptation to work around the fact that we cannot readily put a
+        dictionary into a set. We make a promise not to modify such dictionaries
+        after hashing is needed."""
+        def __hash__(self):
+            return hash(frozenset(self))
+
+    def __init__(self, name, instance, role, port, state=State.RUNNING,
+                 scripts=None, options=None, interface=None, cpu_affinity=None,
+                 env=None):
+        self.name = name
+        self.instance = instance
+        self.port = port
+        self.role = role
+        self.state = state
+        self.scripts = scripts
+        self.options = options
+        self.interface = interface
+        self.cpu_affinity = cpu_affinity
+        self.env = env or {}
+
+    def to_broker(self):
+        # Brokerization of the self.env dict poses a problem: Broker uses Python
+        # sets to represent Broker sets, but Python sets cannot hash members
+        # that have/are dicts. We work around this with a hashable dictionary
+        # that we create only here, so won't modify after hashing.
+        hdenv = Node.HashableDict(self.env.items())
+
+        return (self.name, self.instance,
+                broker.Port(self.port, broker.Port.TCP),
+                # XXX enums are a bit tricky, per the below -- we should cover
+                # these in the Broker Python binding docs. (Same for None vs
+                # Broker's nil.)
+                broker.Data.from_py('Supervisor::' + self.role.name).as_enum_value(),
+                broker.Data.from_py('ClusterController::Types::' +
+                                    self.state.name.title()).as_enum_value(),
+                self.scripts,
+                self.options,
+                self.interface,
+                self.cpu_affinity,
+                hdenv)
+
+    @staticmethod
+    def from_config(parser, name):
+        def get(typ, *keys):
+            for key in keys:
+                val = parser.get(name, key, fallback=None)
+                if val is not None:
+                    try:
+                        return typ(val)
+                    except ValueError as err:
+                        raise ValueError('cannot convert item "{}" in node "{}" to type {}'
+                                         .format(key, name, typ)) from err
+            return None
+
+        instance = get(str, 'instance')
+        port = get(int, 'port')
+        role = get(str, 'role', 'type')
+        state = get(str, 'state') or 'RUNNING'
+        interface = get(str, 'interface')
+        cpu_affinity = get(int, 'cpu_affinity')
+
+        # Validate the specified values
+        if not instance:
+            raise ValueError('node "{}" requires an instance'.format(name))
+        if role is None or role.upper() not in Role.__members__.keys():
+            raise ValueError('node "{}" role "{}" is invalid'.format(name, role))
+        if port is None or port < 1 or port > 65535:
+            raise ValueError('node "{}" port "{}" is invalid'.format(name, port))
+        if state is None or state.upper() not in State.__members__.keys():
+            raise ValueError('node "{}" state "{}" is invalid'.format(name, state))
+
+        return Node(name=name, instance=instance, port=port,
+                    role=Role.__members__.get(role.upper()),
+                    state=State.__members__.get(state.upper()),
+                    interface=interface, cpu_affinity=cpu_affinity)
+
+
+class Configuration:
+    """Equivalent of ClusterController::Types::Configuration."""
+
+    def __init__(self):
+        self.id = make_uuid()
+        self.instances = []
+        self.nodes = []
+
+    def to_broker(self):
+        """Marshal the configuration to a Broker-compatible layout.
+
+        Broker's data format uses tuples for records, so we go through the
+        defined instances and nodes to convert, when they're not None.
+        """
+        instances = {inst.to_broker() for inst in self.instances}
+        nodes = {node.to_broker() for node in self.nodes}
+
+        return (self.id, instances, nodes)
+
+
+class Result:
+    """Equivalent of ClusterController::Types::Result."""
+
+    def __init__(self, reqid, instance, success=True, data=None, error=None, node=None):
+        self.reqid = reqid
+        self.instance = instance
+        self.success = success
+        self.data = data
+        self.error = error
+        self.node = node
+
+    @staticmethod
+    def from_broker(broker_data):
+        return Result(*broker_data)
+
+# Command handlers
+
+def cmd_monitor(controller, args): # pylint: disable=unused-argument
+    while True:
+        resp, msg = controller.receive(None)
+
+        if resp is None:
+            print('no event received: {}'.format(msg))
+        else:
+            print('received "{}"'.format(resp))
+
+    return 0
+
+
+def cmd_instances(controller, args): # pylint: disable=unused-argument
+    controller.publish(events.GetInstancesRequest(make_uuid()))
+    resp, msg = controller.receive()
+
+    if resp is None:
+        LOG.error('No response received: %s', msg)
+        return 1
+
+    if not isinstance(resp, events.GetInstancesResponse):
+        LOG.error('Received unexpected event: %s', resp)
+        return 1
+
+    print(json_dumps(resp.instances))
+
+    return 0
+
+
+def cmd_set_config(controller, args):
+    if not args.layout or not os.path.isfile(args.layout):
+        print_error('Please provide a cluster layout file. See --help for details.')
+        return 1
+
+    parser = configparser.ConfigParser()
+    parser.read(args.layout)
+
+    config = Configuration()
+
+    for section in parser.sections():
+        if section == 'instances':
+            # The [instances] section is special: each key in it is the name of
+            # an instance, each val is the host:port pair where its agent is
+            # listening.
+            for key, val in parser.items('instances'):
+                hostport = val
+                parts = hostport.split(':', 1)
+                if len(parts) != 2:
+                    LOG.warning('invalid instance "%s" spec "%s", skipping', key, val)
+                    continue
+                config.instances.append(Instance(key, parts[0].strip(), parts[1].strip()))
+            continue
+
+        # The other sections are data cluster nodes. Each section name
+        # corresponds to a node name, with the keys being one of "type",
+        # "instance",
+        if section in [node.name for node in config.nodes]:
+            LOG.warning('node "%s" defined more than once, skipping repeats"', section)
+            continue
+
+        try:
+            config.nodes.append(Node.from_config(parser, section))
+        except ValueError as err:
+            LOG.warning('invalid node "%s" spec, skipping: "%s"', section, err)
+
+    # XXX todo: validate basic properties of the configuration
+
+    # Okay, we have a cluster configuration. Ship it:
+
+    controller.publish(events.SetConfigurationRequest(make_uuid(), config.to_broker()))
+    resp, msg = controller.receive()
+
+    if resp is None:
+        LOG.error('No response received: %s', msg)
+        return 1
+
+    if not isinstance(resp, events.SetConfigurationResponse):
+        LOG.error('Received unexpected event: %s', resp)
+        return 1
+
+    retval = 0
+
+    for broker_data in resp.results:
+        res = Result.from_broker(broker_data)
+        if not res.success:
+            msg = ': ' + res.error if res.error else ''
+            print_error('instance {} failure{}'.format(res.instance, msg))
+            retval = 1
+
+    return retval
+
+
+# Utility functions
+
+def make_uuid(prefix=''):
+    """Helper to make a UUID in string form."""
+    return prefix + str(uuid.uuid1())
+
+
+# Broker's basic types aren't JSON-serializable, so patch that up
+# in this json.dumps() wrapper for JSON serialization of any object:
+def json_dumps(obj):
+    def default(obj):
+        if isinstance(obj, ipaddress.IPv4Address):
+            return str(obj)
+        if isinstance(obj, ipaddress.IPv6Address):
+            return str(obj)
+        if isinstance(obj, broker.Port):
+            return str(obj)
+        raise TypeError('cannot serialize {} ({})'.format(type(obj), str(obj)))
+
+    return json.dumps(obj, default=default)
+
+
+def print_error(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def create_parser():
+    parser = argparse.ArgumentParser(description='A zeek-client prototype')
+    parser.add_argument('--controller', metavar='HOST:PORT',
+                        default=ZEEK_CLIENT_DEFAULT_CONTROLLER,
+                        help='Address and port of the controller '
+                        '(default: {})'.format(ZEEK_CLIENT_DEFAULT_CONTROLLER))
+    parser.add_argument('--verbose', '-v', action='count', default=0,
+                        help='Increase program output for debugging.'
+                        ' Use multiple times for more output (e.g. -vvv).')
+
+    command_parser = parser.add_subparsers(
+        title='commands', dest='command',
+        help='See `%(prog)s <command> -h` for per-command usage info.')
+    command_parser.required = True
+
+    # monitor
+
+    sub_parser = command_parser.add_parser(
+        'monitor', help='For troubleshooting: do nothing, just report events.')
+    sub_parser.set_defaults(run_cmd=cmd_monitor)
+
+    # instances
+
+    sub_parser = command_parser.add_parser(
+        'instances', help='Show instances connected to the controller.')
+    sub_parser.set_defaults(run_cmd=cmd_instances)
+
+    # set-config
+
+    sub_parser = command_parser.add_parser(
+        'set-config', help='Deploy cluster configuration.')
+    sub_parser.set_defaults(run_cmd=cmd_set_config)
+    sub_parser.add_argument('-l', '--layout', metavar='FILE',
+                            help='Cluster layout file')
+    return parser
+
+
+def configure_logger(args):
+    if args.verbose == 0:
+        return
+
+    formatter = logging.Formatter(
+        '%(asctime)s %(levelname)-8s %(message)s', '%Y-%m-%d %H:%M:%S')
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+
+    if args.verbose == 1:
+        LOG.setLevel(logging.WARNING)
+    elif args.verbose == 2:
+        LOG.setLevel(logging.INFO)
+    elif args.verbose >= 3:
+        LOG.setLevel(logging.DEBUG)
+
+    LOG.addHandler(handler)
+
+
+# Main routine
+
+def main():
+    parser = create_parser()
+    args = parser.parse_args()
+
+    configure_logger(args)
+
+    controller_parts = args.controller.split(':', 1)
+    if len(controller_parts) != 2:
+        print_error('error: controller must be a host:port tuple')
+        return 1
+
+    controller_host = controller_parts[0]
+
+    try:
+        controller_port = int(controller_parts[1])
+        if controller_port < 1 or controller_port > 65535:
+            raise ValueError
+    except ValueError:
+        print_error('error: controller port number invalid')
+        return 1
+
+    controller = Controller(controller_host, controller_port)
+    if not controller.connect():
+        return 1
+
+    try:
+        return args.run_cmd(controller, args)
+    except KeyboardInterrupt:
+        return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

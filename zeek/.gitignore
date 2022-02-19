@@ -1,0 +1,19 @@
+# Ignore anything prefixed with build since people
+# tend to name all of their build directories prefixed that way.
+build*
+
+tmp
+*.gcov
+
+# Configuration and build directories for CLion
+.idea
+cmake-build-*
+
+# skip DS Store for MacOS
+.DS_Store
+
+# ignore pyenv local settings
+.python-version
+
+# clangd
+.cache
