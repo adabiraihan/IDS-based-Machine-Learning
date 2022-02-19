@@ -1,0 +1,1 @@
+{ "Format": "IDEA0", "ID": "ffbff100-21ea-4828-849f-2fdbfaaa1c35", "DetectTime": "2022-01-31T11:03:48.241788+07:00", "EventTime": "2022-01-31T04:06:30.201208+00:00", "Category": ['Intrusion.Botnet'], "Confidence": 0.63, "Note": "C&C channel, destination IP: 192.168.1.24 port: 80/tcp score: 0.9094", "Source": [{'IP4': ['192.168.1.2'], 'Type': ['CC']}] }

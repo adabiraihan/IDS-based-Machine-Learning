@@ -1,0 +1,259 @@
+-0.8.3
+* Slips
+  - More accurate threat levels, now they're strings instead of values
+  - Add CESNET sharing moddule, which supports exporting and importing event to and from warden servers
+  - Improve Unknown ports alerts, now we don't have false positive alerts when apple devices are talking to each other using unknown ports
+  - Added support for continuous integrations using Github Actions
+  - Improvements in printing alerts, we now print each alert with it's timestamp and the evidence caused it
+  - Local TI files now support threat levels. each entry now has it'sown threat level.
+  - Improve empty HTTP connections. now supports (Yandix, bing and yahoo)
+  - Detect JNDI string as suspicious user agent. used in Log4shell CVE-2021-44228.
+  - Improve whitelists.
+  - Improve code security.
+
+-0.8.2
+*	Slips
+		- Detect gratoitous ARP
+		- Detect unsolicited ARP
+		- Detect MITM ARP attack
+		- Detect DGA
+		- Support popup notifications in Linux and mac. disabled by default. enable it by changing popup_alerts to yes in slips.conf 
+		- Add 5 new TI feeds (AmnestyTech domains)
+		- The Threat Intelligence feeds are now assigned a threat level instead of confidence value by default (user can change), so you can establish how each list impact your detection.
+		- Improve unknown ports detections. Now we don't alert for ports that appear in an FTP connection.
+		- Improve threat levels and confidence of all alerts.
+		- Add support for storing a copy of zeek files in the output directory.
+		- Add support for enabling and disabling detections in slips.conf
+		- Read RiskIQ email and API key from modules/RiskIQ/credentials instead of the configuration file.
+		- Now log files are disabled by default, use -l or set create_log_files to yes in slips.conf for enabling them. 
+		- Support commenting TI files in slips.conf: when TI files are commented using ; in slips.conf, they are completely removed from our database.
+		- Now slips generates alerts in IDEA format by default in alerts.json
+		- Support importing and exporting alerts to warden servers. (CESNET sharing module)
+		- Fix redis closing connection errors
+		- Optimize our docker image
+
+-0.8.1
+*	Slips
+		- The Threat Intelligence feeds are now assigned a tag value by default (user can change), so you can categorize feeds e.g. phshing, adtrackers, etc..
+		- Add module to detect leaks of data in the traffic using YARA rules (works on PCAPs only)
+		- Move RiskIQ api key to a separate file in modules/UpdateManager/api_key_secret
+		- Add support for whitelisting MAC addresses
+		- Add a new module for getting RiskIQ info like passive DNS etc.
+		- Merge geoip, asn and RDNS modules into a single new module called IP_Info
+		- Add detection for multiple connections to google.com on port 80
+		- Add the known list of TOR exit nodes to the TI list
+		- Improve DNS without connection and connection without DNS detections
+		- Update our lists of organizations IPs, used for whitelisting
+		- Improve the printing of evidence and alerts
+		- Add SNI/DNS/RDNS to the IP to 'unknown ports' alerts description
+		- Improve ICMP Sweep detections
+- 0.8
+    - Slips
+		- Detect PING sweep scan.
+		- The Threat Intelligence feeds are now assigned a confidence value by default (user can change), so you can establish how each list impact your detection.
+        - Slips now allows you to re-train the machine learning model for flows with your own traffic. You can extend the current model, or start from scratch.
+        - Compute the JA3 hash for all TLS connections using a Zeek script.
+        - Use JA3 whitelists as detection in the Threat Intelligence module.
+		- Detect malicious downloaded files by searching for their MD5 hash on virustotal.
+		- Detect SSH password guessing by using the Zeek log for this.
+		- Detect connection to and from port 0/TCP and 0/UDP.
+		- Detect Connection without DNS resolution and DNS resolutions without a following TCP or UDP connection.
+		- Use whitelists of IPs, domains, and complete Organizations (using lists of ASN and domains and IPs) to ignore flows or to ignore alerts (organizations preconfigured for Google, Apple, Facebook, and Twitter).
+		- New module to detect data exfiltration by checking large transfers (commit ef88fc6).
+		- Detect connections to unkown TCP and UDP ports (ignore P2P traffic).
+		- New export alerts in suricata-style format.
+		- Check suspicious user agents in HTTP (for now only 'httpsend', 'chm_msdn', 'pb').
+		- New ARP-scan detector module.
+		- Be able to run multiple independent instances of slips in the same machine.
+		- Save and load redis databases to disk as backup for later analysis.
+		- Add unit tests in tests/ folder.
+        - Use our own Zeek configuration file, so Slips does not collide with the local installation.
+        - Use our own Zeek scripts folder, so Slips does not collide with the local installation.
+        - Add port 57621/UDP as known spotify-p2p-communication.
+        - Add support for the format of many TI feeds.
+        - Add the following Threat Intelligence lists by default to be downloaded and used:
+            - https://mcfp.felk.cvut.cz/publicDatasets/CTU-AIPP-BlackList/Todays-Blacklists/AIP_blacklist_for_IPs_seen_last_24_hours.csv
+            - https://mcfp.felk.cvut.cz/publicDatasets/CTU-AIPP-BlackList/Todays-Blacklists/AIP_historical_blacklist_prioritized_by_newest_attackers.csv
+            - https://raw.githubusercontent.com/stratosphereips/Civilsphere/main/threatintel/strangereallintel-cyberthreatintel.csv
+            - https://raw.githubusercontent.com/Te-k/stalkerware-indicators/master/network.csv
+            - https://raw.githubusercontent.com/stratosphereips/Civilsphere/main/threatintel/adserversandtrackers.csv
+            - https://raw.githubusercontent.com/stratosphereips/Civilsphere/main/threatintel/civilsphereindicators.csv
+            - https://raw.githubusercontent.com/botherder/targetedthreats/master/targetedthreats.cs
+            - https://osint.digitalside.it/Threat-Intel/lists/latestdomains.txt
+            - https://osint.digitalside.it/Threat-Intel/lists/latestips.txt
+            - https://osint.digitalside.it/Threat-Intel/lists/latestips.txt
+            - https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt
+            - https://raw.githubusercontent.com/stamparm/ipsum/master/ipsum.txt
+            - https://raw.githubusercontent.com/ktsaou/blocklist-ipsets/master/firehol_level1.netset
+            - https://nerd.cesnet.cz/nerd/data/ip_rep.csv
+            - https://lists.blocklist.de/lists/all.txt
+            - https://lists.blocklist.de/lists/ssh.txt
+            - https://lists.blocklist.de/lists/mail.txt
+            - https://lists.blocklist.de/lists/bruteforcelogin.txt
+            - https://feodotracker.abuse.ch/downloads/ipblocklist.csv
+            - https://reputation.alienvault.com/reputation.generic
+            - https://rstcloud.net/free/ioc/ioc_ip_latest.csv
+            - https://www.binarydefense.com/banlist.txt
+            - https://rstcloud.net/free/ioc/ioc_domain_latest.csv
+            - https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/Cyber_Threat_Coalition_Domain_Blacklist.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/abuse-ch-ipblocklist.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/alienvault.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/binarydefense.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/cobaltstrike_ips.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/compromised-ips.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/cps-collected-iocs.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/dom-bl.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/illuminate.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/openphish.intel
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/filetransferportals.intel,
+            - https://raw.githubusercontent.com/CriticalPathSecurity/Zeek-Intelligence-Feeds/master/predict_intel.intel
+            - https://raw.githubusercontent.com/Te-k/stalkerware-indicators/master/network.csv 
+            - https://raw.githubusercontent.com/Te-k/stalkerware-indicators/master/quad9_blocklist.txt
+            - https://raw.githubusercontent.com/kwouffe/cryptonote-hunt/master/nsec/full-results-2019-05-15.json
+            - https://raw.githubusercontent.com/craiu/mobiletrackers/master/list.txt
+        - Add support for URLs checking in the VirusTotal module. The URLs are also cached for performance improving.
+        - Use the RiskIQ site API to download the IoC lists of Phishing domains (https://api.riskiq.net/pt/v2/articles/indicators)
+        - Use the RiskIQ phishing domains for threat intelligence detection
+        - Implement read the docs stratospherelinuxips.readthedocs.io
+        - Improve how we read binetflow files
+        - Add some new test datasets to ./datasets folder
+        - Add requirements.txt
+    - Kalipso
+        - Add Reverse DNS to the 'i' hotkey
+        - Timewindows have correct time and date in the interface
+        - Large refactoring of code of whole Kalipso
+        - Improve the documentation
+- 0.7.3
+	- Slips 
+		- Added RDNS module to retrieve reverse DNS of the IP
+		- Fixed reading files with Zeek TABs
+		- Fixed the docker image for Ubuntu
+		- Added a new module for exporting alerts to Slack and TAXII server
+		- Added new Threat Intelligence trackers
+		- Added new notice.log detections
+		- Fixed reading Zeek logs with TABs
+		- Added a parameter -cb to clean chains in blocking module
+		- Updated documentation with a usage
+		- Added a new module for Zeek anomaly detections
+		- Fixed a bug of tensorflow not working in the docker
+	- Kalipso
+		- Added reverse DNS to Kalipso IPInfo box
+		- Fixed the version of the npm package
+		- Fixed the print of evidences in the Evidence box
+- 0.7.2 (published 2020/04/28)
+	- Slips
+		- New documentation in read-the-docs
+		- Update of ASN files in the Update manager
+		- Added new Threat Intelligence feeds
+		- Added a custom -help function
+		- Added new detection of self-signed certificates
+		- Improvement of LSTM module to detect C&C channels
+		- Added a duration of the connection in the timeline
+		- Add a default configuration file, if nothing is specified
+		- New docker version without a tensoflow
+		- Fixed the levels of threat and confidence of all modules
+	- Kalipso
+		- Added a new hotkey -z to summarize alerts in all timewindows of the profile
+		- Display of a flow duration in the timeline widget
+		- Fixed the display of SNI only for TLS/SSL connections 
+		- Fixed the bug in dstPortServer hotkey
+- 0.7.1 (published 2020/12/18)
+	- Slips
+		- fix the function of Slips to stop after pressing CTRL-C
+		- fix Slips stopping automatically
+		- add zeek tcp-inactivity-timeout=1hs
+		- add module flowalert and alert when a long connection happens (more than 20 minutes)
+		- add colors to the detection shown in the console
+		- add 3 new TI feeds to slips conf by default
+		- make longconnection feature in flowalert to ignore multicast
+		- fix some TI files not being updated
+		- check TI data in the host field of HTTP
+		- check TI data in the SNI field of TLS requests
+		- rename blessed module folder to kalipso
+	- Kalipso
+		- ESC - exit the hotkey, q - exit Kalipso
+		- execution of Kalipso from Slips folder: $./kalipso.sh
+		- added hotkey 'h' for help
+		- changed hotkey 'g'(out tuples) on hotkey 'i'
+		- added SNI of TLS/SSL column in 'i' and 'y' hotkeys
+		- fix Kalipso being reshred when being in hotkeys
+- 0.7.0 (published 2020/09/25)
+	- Slips
+		- VirusTotal module retrieves information for domains from DNS flows
+		- Added new channel 'new_dns_flow'
+		- Fixed portscan to eliminate detection for IPs that were resolved with DNS
+		- VirusTotal module retrieves passive DNS information
+		- VirusTotal module retrieves asn information and stores it for IP if missing
+		- Storing in database multiple DNS resolutions per one IP
+		- Fixed the function for blocking profile and timewindow in Evedince module
+		- Added a field to the flow to put labels from modules 
+		- Fixed the display of DNS resolutions up to 3 for the IP in the timeline
+		- Added functions to mark timewindow as finished
+		- Default label of the flow in the slips.conf is changed to 'unknown'
+		- Added a module to block IPs when running Slips on interface in Linux machine
+		- Added a parameter '-b' to enable blocking module on the interface in Linux machine
+		- Store DomainsInfo in cache database
+	- Kalipso
+		- Automatic reload of the interface. Interface is reloaded every 2 minutes. Opened timeline for ip and tw will not be updated, but the list of tws for current IP will be updated.
+		- Changed the description of the old host IPs to 'old me' (before was 'me')
+		- Changed the type of widget for IP info to listtable from blessed-contrib lib
+- 0.6.9 (published 2020/08/12)
+	- Slips
+		- Added cache for IPs from Threat Inelligence files
+		- Added cache for IPs Info
+		- Added new module UpdateManager to update Threat Intelligence files
+		- Changed the structure of VirusTotal Module
+		- Added parameters in slips.conf for updating VirusTotal and Threat Intelligence
+		- Added new channel 'core_messages', UpdateManager is subscribed to that
+		- Added manager to search host IP, if Slips is running on interface and networks are changing
+		- Flows in the timeline are sorted
+		- Added architecture to close timewindow of a profile
+		- Fixed the reading of nfdump file
+		- Added parameter '-cc' to clear cache database
+	- Kalipso
+		- Hotkeys 'c' and 'p' are sorted by the size of totalbytes
+- 0.6.8 (published 2020/07/07)
+	- New version of Kalipso
+		- Widgets are splitted in classes
+		- Added comments
+		- Fixed screen way for hotkeys
+		- 'Esc' to exit Kalipso
+		- 'q' to exit hotkey
+- 0.6.7 (published 2020/06/30)
+	- Add a test file for nfdump.
+	- In the threat intelligence configuration add by default the file https://mcfp.felk.cvut.cz/publicDatasets/CTU-AIPP-BlackList/Todays-Blacklists/AIP_blacklist_for_IPs_seen_last_24_hours.csv. It has a blacklist of IP addresses that are attacking the Internet. Coming from the stratosphere laboratory and the aposemat project. The AIP program.
+	- In the threat intelligence configuration add by default the file https://mcfp.felk.cvut.cz/publicDatasets/CTU-AIPP-BlackList/Todays-Blacklists/AIP_historical_blacklist_prioritized_by_newest_attackers.csv. It has a blacklist of IP addresses that are attacking the Internet. Coming from the stratosphere laboratory and the aposemat project. The AIP program.
+	- In the threat intelligence configuration add by default the file https://raw.githubusercontent.com/Te-k/stalkerware-indicators/master/network.csv with domains used for stalkerware
+	- In the threat intelligence module configuration, add a static version of the IPs of the NSO group from Amnesty from https://raw.githubusercontent.com/AmnestyTech/investigations/master/2018-08-01_nso/indicators.csv
+	- Change the old test-flows folder for the dataset folder
+	- New section in the configuration file with the threat intelligence data
+	- Ignore warnings
+	- Update the template module
+	- Read as input a zeek folder full of logs with -f
+	- Fixed bugs in the timeline of Kalipso
+	- New lstm module to detect C&C channels in the network. It detects channels by running a machine learning LSTM network on the behavioral letters.
+	- Several bug fixed
+	- New DNS blacklist management in the threat intelligence module
+	- Better store of IPs in the database
+	- Fix an error in how the behavioural letters where created
+- 0.6.6 
+	- Added DNS resolution for IPs in timeline
+	- Added inTuple key to the timeline for inbound flows when analysis_direction = 'all'
+	- Changed the timeline format in Slips and Kalipso
+	- Defined host IP in Slips and Kalipso if Slips is run on interface
+- 0.6.5 
+	- Fixed Threat Intelligence module to be fully functional.
+	- Added new feature to stop Slips automatically when input files ends.
+	- Fixed the storing and display of inbound flows in analysis direction 'all'.
+	- Fixed Kalipso to display inbound flows and h hotkey to display out tuples
+- 0.5 Completely renewed architecture and code.
+- 0.4 was never reached
+- 0.3.5
+- 0.3.4
+	- This is a mayor version change. Implementing new algorithms for analyzing the results, management of IPs, connections, whois database and more features.
+	- A new parameter to specify the file (-r). This is as fast as reading the file from stdin.
+	- Now we have a configuration file slips.conf. In there you can specify from fixed parameters, the time formats, to the columns in the flow file.
+- 0.3.3alpha
+	- First stable version with a minimal algorithm for detecting behavioral threats.
+
