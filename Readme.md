@@ -29,7 +29,7 @@ Source : https://github.com/stratosphereips/StratosphereLinuxIPS
 <br>
 <br>
 
-![ELK Stack](https://user-images.githubusercontent.com/43380235/169695696-7b2cd0f0-0a2e-4ea7-b5d6-b32772c68203.png)
+<img width="138" alt="Slips" src="https://user-images.githubusercontent.com/43380235/169695696-7b2cd0f0-0a2e-4ea7-b5d6-b32772c68203.png">
 
 **ELK Stack / Elasticsearch, Logstash, and Kibana (Log Management, SIEM, and Data Visualization)**
 --
