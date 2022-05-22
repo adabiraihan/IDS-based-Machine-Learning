@@ -1,4 +1,0 @@
-# @TEST-EXEC: zeek -b -C -r $TRACES/tunnels/socks.pcap %INPUT
-# @TEST-EXEC: btest-diff tunnel.log
-
-@load base/protocols/socks

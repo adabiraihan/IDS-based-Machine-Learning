@@ -1,2 +1,0 @@
-const DCE_RPC::max_cmd_reassembly: count;
-const DCE_RPC::max_frag_data: count;

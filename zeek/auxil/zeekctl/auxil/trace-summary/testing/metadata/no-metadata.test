@@ -1,5 +1,0 @@
-# Test a conn.log that has no metadata lines.
-#
-# @TEST-EXEC: trace-summary -c $FILES/conn.log_no_header > out
-# @TEST-EXEC: btest-diff out
-

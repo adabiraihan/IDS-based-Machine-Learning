@@ -1,1 +1,0 @@
-print "quux loaded";

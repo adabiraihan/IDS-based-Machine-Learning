@@ -1,2 +1,0 @@
-type TCP::Option: record;
-type TCP::OptionList: vector;

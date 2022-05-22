@@ -1,9 +1,0 @@
-module DHCP;
-
-type Msg: record;
-type Addrs: vector;
-type SubOpt: record;
-type SubOpts: vector;
-type ClientFQDN: record;
-type ClientID: record;
-type Options: record;

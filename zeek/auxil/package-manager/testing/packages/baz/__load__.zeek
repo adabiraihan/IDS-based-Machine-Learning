@@ -1,1 +1,0 @@
-print "baz loaded";

@@ -1,4 +1,0 @@
-# @TEST-EXEC: zeek %INPUT > output
-# @TEST-EXEC: btest-diff output
-
-print Demo::rot13("Hello");
