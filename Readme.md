@@ -6,6 +6,7 @@ In this system there will be 3 of open-source tools that plays an important role
 
 <br>
 <br>
+
 <img width="138" alt="Zeek" src="https://user-images.githubusercontent.com/43380235/169695699-0a33f0a1-7b38-44c9-9c54-e093ae7ff411.png">
 
 **Zeek Intrusion Detection System (IDS)**
@@ -14,11 +15,13 @@ Zeek is a passive, open-source network traffic analyzer. Many operators use Zeek
 
 <br>
 <br>
+
 ![Slips-removebg-preview](https://user-images.githubusercontent.com/43380235/169695789-a290d114-2f6c-471e-9c94-87d2322085aa.png)
 
 **StratospherelinuxIPS (Machine Learning Process)**
 --
 StratospeherelinuxIPS or Slips is a behavioral-based Python intrusion prevention system that uses machine learning to detect malicious behaviors in the network traffic. Slips was designed to focus on targeted attacks, detection of command and control channels to provide good visualisation for the analyst. Slips is a modular software.
+
 <br>
 <br>
 ![ELK Stack](https://user-images.githubusercontent.com/43380235/169695696-7b2cd0f0-0a2e-4ea7-b5d6-b32772c68203.png)
