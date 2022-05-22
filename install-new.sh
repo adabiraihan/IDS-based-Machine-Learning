@@ -90,11 +90,7 @@ else
 	sudo apt install zeek -y
 fi
 
-
-
 export PATH=/opt/zeek/bin:$PATH
-
-
 
 #git clone --recursive https://github.com/zeek/zeek
 
@@ -110,8 +106,8 @@ echo ""
 
 echo "$(tput setaf 1) ---- Installing Slips (Machine Learning) ----"
 
-apt install pip
-apt install redis-server
+apt install pip -y
+apt install redis-server -y
 pip install maxminddb 
 pip install numpy 
 pip install watchdog 
