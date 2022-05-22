@@ -1,13 +1,13 @@
 #!/bin/bash
 
-echo "$(tput setaf 1) ---- Creating Folder for Zeek & Slips ----"
+echo "$(tput setaf 2) ---- Creating Folder for Zeek & Slips ----"
 
 cd /home/
 
 echo ""
 echo ""
 
-echo "$(tput setaf 3) ---- Ketikan di direktori mana folder akan di buat (ex: /home/ubuntu/Downloads/  )     ----"
+echo "$(tput setaf 2) ---- Ketikan di direktori mana folder akan di buat (ex: /home/ubuntu/Downloads/  )     ----"
 
 echo "Tujuan Direktori : "
 read directory
@@ -17,7 +17,7 @@ cd $directory
 echo ""
 echo ""
 
-echo "$(tput setaf 3) ---- Ketikan Nama Folder yang ingin dibuat (ex: ProjecTA/ )     ----"
+echo "$(tput setaf 2) ---- Ketikan Nama Folder yang ingin dibuat (ex: ProjecTA/ )     ----"
 echo "Nama Folder : "
 
 read folder
@@ -34,7 +34,7 @@ pwd
 echo ""
 echo ""
 
-echo "$(tput setaf 1) ---- Performing upgrade ----"
+echo "$(tput setaf 3) ---- Performing upgrade ----"
 
 apt update -y
 apt upgrade -y
@@ -43,7 +43,7 @@ apt upgrade -y
 echo ""
 echo ""
 
-echo "$(tput setaf 1) ---- Installing Zeek (Intrusion Detection System) ----"
+echo "$(tput setaf 3) ---- Installing Zeek (Intrusion Detection System) ----"
 
 apt-get install cmake make gcc g++ flex bison libpcap-dev libssl-dev python3 python3-dev swig zlib1g-dev git curl net-tools -y
 
@@ -94,7 +94,7 @@ export PATH=/opt/zeek/bin:$PATH
 echo ""
 echo ""
 
-echo "$(tput setaf 1) ---- Installing Slips (Machine Learning) ----"
+echo "$(tput setaf 3) ---- Installing Slips (Machine Learning) ----"
 
 apt install pip -y
 apt install redis-server -y
@@ -138,7 +138,7 @@ echo "$(tput setaf 3) ---- Jangan Lupa untuk Configure file slips.conf ----"
 
 echo ""
 
-echo "$(tput setaf 1) ---- Installing Java 8 ----"
+echo "$(tput setaf 3) ---- Installing Java 8 ----"
 
 apt install openjdk-8-jdk -y
 
@@ -148,7 +148,7 @@ apt install openjdk-8-jdk -y
 
 echo ""
 
-echo "$(tput setaf 1) ---- Setting up public signing key ----"
+echo "$(tput setaf 3) ---- Setting up public signing key ----"
 
 #wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
 wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
@@ -157,13 +157,13 @@ wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add
 echo ""
 
 
-echo "$(tput setaf 1) ---- Installing the apt-transport-https package ----"
+echo "$(tput setaf 3) ---- Installing the apt-transport-https package ----"
 
 apt-get install apt-transport-https -y
 
 apt update -y
 
-echo "$(tput setaf 1) ---- Saving Repository Definition to /etc/apt/sources/list.d/elastic-7.x.list ----"
+echo "$(tput setaf 3) ---- Saving Repository Definition to /etc/apt/sources/list.d/elastic-7.x.list ----"
 
 echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
 
@@ -172,7 +172,7 @@ echo ""
 echo ""
 
 
-echo "$(tput setaf 1) ---- Installing the Elasticsearch Debian Package ----"
+echo "$(tput setaf 3) ---- Installing the Elasticsearch Debian Package ----"
 
 apt-get update -y 
 apt-get install elasticsearch -y
@@ -183,7 +183,7 @@ echo ""
 echo ""
 
 
-echo "$(tput setaf 1) ---- Installing the Kibana Debian Package ----"
+echo "$(tput setaf 3) ---- Installing the Kibana Debian Package ----"
 
 apt-get install kibana -y
 
@@ -192,7 +192,7 @@ echo ""
 echo ""
 
 
-echo "$(tput setaf 1) ---- Installing Logstash ----"
+echo "$(tput setaf 3) ---- Installing Logstash ----"
 
 apt-get install logstash -y
 
@@ -201,7 +201,7 @@ echo ""
 echo ""
 
 
-echo "$(tput setaf 1) ---- Installing Filebeat ----"
+echo "$(tput setaf 3) ---- Installing Filebeat ----"
 
 #curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.2.0-amd64.deb
 
@@ -222,7 +222,7 @@ filebeat modules enable zeek
 echo ""
 echo ""
 
-echo "$(tput setaf 1) ---- Starting Elasticsearch ----"
+echo "$(tput setaf 3) ---- Starting Elasticsearch ----"
 
 #sudo systemctl daemon-reload
 #sudo systemctl enable elasticsearch.service
@@ -231,7 +231,7 @@ systemctl start elasticsearch.service
 echo ""
 echo ""
 
-echo "$(tput setaf 1) ---- Starting Kibana ----"
+echo "$(tput setaf 3) ---- Starting Kibana ----"
 
 #systemctl enable kibana.service
 systemctl start kibana.service
@@ -239,7 +239,7 @@ systemctl start kibana.service
 echo ""
 echo ""
 
-echo "$(tput setaf 1) ---- Starting Logstash ----"
+echo "$(tput setaf 3) ---- Starting Logstash ----"
 
 #systemctl enable logstash.service
 systemctl start logstash.service
@@ -247,7 +247,7 @@ systemctl start logstash.service
 echo ""
 echo ""
 
-echo "$(tput setaf 1) ---- Starting Filebeat ----"
+echo "$(tput setaf 3) ---- Starting Filebeat ----"
 
 #systemctl enable filebeat
 systemctl start filebeat
@@ -260,4 +260,4 @@ filebeat setup --pipelines
 echo ""
 echo ""
 
-echo "$(tput setaf 1) ---- Install Finish ----"
+echo "$(tput setaf 3) ---- Install Finish ----"
