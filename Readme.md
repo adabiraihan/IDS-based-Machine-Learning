@@ -19,7 +19,7 @@ Source : https://github.com/zeek/zeek
 <br>
 <br>
 
-<img width="138" alt="Slips" src="https://user-images.githubusercontent.com/43380235/169695789-a290d114-2f6c-471e-9c94-87d2322085aa.png">
+<img position="center" width="138" alt="Slips" src="https://user-images.githubusercontent.com/43380235/169695789-a290d114-2f6c-471e-9c94-87d2322085aa.png">
 
 **StratospherelinuxIPS (Machine Learning Process)**
 --
