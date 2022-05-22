@@ -12,6 +12,8 @@ Zeek is a passive, open-source network traffic analyzer. Many operators use Zeek
 --
 StratospeherelinuxIPS or Slips is a behavioral-based Python intrusion prevention system that uses machine learning to detect malicious behaviors in the network traffic. Slips was designed to focus on targeted attacks, detection of command and control channels to provide good visualisation for the analyst. Slips is a modular software.
 
+![ELK Stack](https://user-images.githubusercontent.com/43380235/169695696-7b2cd0f0-0a2e-4ea7-b5d6-b32772c68203.png)
+
 **ELK Stack / Elasticsearch, Logstash, and Kibana (Log Management, SIEM, and Data Visualization)**
 --
 ELK is the acronym for three open source projects: Elasticsearch, Logstash, and Kibana. Elasticsearch is a search and analytics engine. Logstash is a server‑side data processing pipeline that ingests data from multiple sources simultaneously, transforms it, and then sends it to a "stash" like Elasticsearch. Kibana lets users visualize data with charts and graphs in Elasticsearch.
