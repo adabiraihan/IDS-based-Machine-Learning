@@ -36,13 +36,16 @@ Source : https://github.com/stratosphereips/StratosphereLinuxIPS
 ELK is the acronym for three open source projects: Elasticsearch, Logstash, and Kibana. Elasticsearch is a search and analytics engine. Logstash is a server‑side data processing pipeline that ingests data from multiple sources simultaneously, transforms it, and then sends it to a "stash" like Elasticsearch. Kibana lets users visualize data with charts and graphs in Elasticsearch.
 Source : https://github.com/elastic
 
-****How to Install****
+<br>
+<br>
+
+**How to Install**
 Note: Run all this script with superuser (root), to prevent from failing when installing
 
 1. Run install.sh in Install Requirement folder and follow the instructions, it will automatically install 3 of open-source tools.
-''' ./install.sh '''
+``` ./install.sh ```
 
 2. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque aliquam id lectus eget pharetra.
  
 3. Run start.sh in Start folder and follow the instructions
-''' ./start.sh '''
+``` ./start.sh ```
