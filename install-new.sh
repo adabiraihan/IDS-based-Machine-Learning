@@ -10,7 +10,6 @@ echo ""
 echo "$(tput setaf 3) ---- Ketikan di direktori mana folder akan di buat (ex: /home/ubuntu/Downloads/  )     ----"
 
 echo "Tujuan Direktori : "
-
 read directory
 
 cd $directory
@@ -38,24 +37,19 @@ echo ""
 echo "$(tput setaf 1) ---- Performing upgrade ----"
 
 apt update -y
-
 apt upgrade -y
 
 
 echo ""
 echo ""
 
-
-
 echo "$(tput setaf 1) ---- Installing Zeek (Intrusion Detection System) ----"
 
 apt-get install cmake make gcc g++ flex bison libpcap-dev libssl-dev python3 python3-dev swig zlib1g-dev git curl net-tools -y
 
-
 echo ""
 echo ""
 echo ""
-
 
 echo "Install di ubuntu versi berapa ? (Tuliskan Angka saja (ex: 1)"
 
@@ -93,14 +87,10 @@ fi
 export PATH=/opt/zeek/bin:$PATH
 
 #git clone --recursive https://github.com/zeek/zeek
-
 #zeekstring="zeek"
-
 #cd $directory$folder$zeekstring
-
 #./configure && make && make install
 
-#cd ..
 echo ""
 echo ""
 
@@ -146,9 +136,7 @@ echo ""
 
 echo "$(tput setaf 3) ---- Jangan Lupa untuk Configure file slips.conf ----"
 
-
 echo ""
-
 
 echo "$(tput setaf 1) ---- Installing Java 8 ----"
 
@@ -246,7 +234,6 @@ echo ""
 echo "$(tput setaf 1) ---- Starting Kibana ----"
 
 #systemctl enable kibana.service
-
 systemctl start kibana.service
 
 echo ""
@@ -255,38 +242,22 @@ echo ""
 echo "$(tput setaf 1) ---- Starting Logstash ----"
 
 #systemctl enable logstash.service
-
 systemctl start logstash.service
 
 echo ""
 echo ""
 
-
-
 echo "$(tput setaf 1) ---- Starting Filebeat ----"
 
 #systemctl enable filebeat
-
 systemctl start filebeat
 
 filebeat setup -e
-
 filebeat setup --dashboards
-
 filebeat setup --index-management
-
 filebeat setup --pipelines
 
-
-
 echo ""
 echo ""
 
-
-echo "$(tput setaf 1) ---- Final Finish Configuration ----"
-
-echo "$(tput setaf 4) 1. edit kibana.yml and change server.host to your IP so that you can connect to kibana from other systems http://ipaddress:5601"
-
-echo "$(tput setaf 4) 2. edit elasticsearch.yml and change network.host to your IP  so that other systems can send data to elasticsearch"
-
-echo "$(tput setaf 4) 3. restart both services sudo systemctl restart elasticsearch kibana"
+echo "$(tput setaf 1) ---- Install Finish ----"
