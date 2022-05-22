@@ -54,13 +54,10 @@ echo ""
 echo "Install di ubuntu versi berapa ? (Tuliskan Angka saja (ex: 1)"
 
 echo "1. Ubuntu 20.04 (Default)"
-
 echo "2. Ubuntu 22.04"
-
 echo "3. Ubuntu 18.04"
 
 read versi
-
 
 if [ $versi -eq 1 ] 
 
@@ -134,10 +131,6 @@ git clone https://github.com/stratosphereips/StratosphereLinuxIPS
 echo ""
 echo ""
 
-echo "$(tput setaf 3) ---- Jangan Lupa untuk Configure file slips.conf ----"
-
-echo ""
-
 echo "$(tput setaf 3) ---- Installing Java 8 ----"
 
 apt install openjdk-8-jdk -y
@@ -153,53 +146,41 @@ echo "$(tput setaf 3) ---- Setting up public signing key ----"
 #wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
 wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
 
-
 echo ""
-
 
 echo "$(tput setaf 3) ---- Installing the apt-transport-https package ----"
 
 apt-get install apt-transport-https -y
-
 apt update -y
 
 echo "$(tput setaf 3) ---- Saving Repository Definition to /etc/apt/sources/list.d/elastic-7.x.list ----"
 
 echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
 
-
 echo ""
 echo ""
-
 
 echo "$(tput setaf 3) ---- Installing the Elasticsearch Debian Package ----"
 
 apt-get update -y 
 apt-get install elasticsearch -y
 
-
-
 echo ""
 echo ""
-
 
 echo "$(tput setaf 3) ---- Installing the Kibana Debian Package ----"
 
 apt-get install kibana -y
 
-
 echo ""
 echo ""
-
 
 echo "$(tput setaf 3) ---- Installing Logstash ----"
 
 apt-get install logstash -y
 
-
 echo ""
 echo ""
-
 
 echo "$(tput setaf 3) ---- Installing Filebeat ----"
 
