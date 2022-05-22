@@ -1,0 +1,2 @@
+#*/2 * * * * cd /home/ubuntu/Downloads/projek/StratosphereLinuxIPS && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log
+#*/2 * * * * /usr/share/logstash/bin/logstash -f /etc/logstash/conf.d/zeek.conf
