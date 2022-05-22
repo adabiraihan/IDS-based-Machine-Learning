@@ -45,16 +45,16 @@ read options
 if [ $options -eq 1 ]
 then
 	redis-server --daemonize yes
-	crontab -l | grep -Fq "*/30 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log" && echo "Sudah ada" || echo "Crontab telah dibuat" && (crontab -l | echo -e "MAILTO=""\n*/30 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log\n*/35 * * * * /usr/share/logstash/bin/logstash -f /etc/logstash/conf.d/zeek.conf") | crontab -
+	crontab -l | grep -Fq "*/30 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log" && echo "Sudah ada" || echo "Crontab telah dibuat" && (crontab -l | echo -e "*/30 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log\n*/35 * * * * /usr/share/logstash/bin/logstash -f /etc/logstash/conf.d/zeek.conf") | crontab -
 	echo "Logstash & Machine Learning akan running setiap 30 menit"
 elif [ $options -eq 2 ]
 then
 	redis-server --daemonize yes
-	crontab -l | grep -Fq "*/20 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log" && echo "Sudah ada" || echo "Crontab telah dibuat" && (crontab -l | echo -e "MAILTO=""\n*/20 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log\n*/25 * * * * /usr/share/logstash/bin/logstash -f /etc/logstash/conf.d/zeek.conf") | crontab -
+	crontab -l | grep -Fq "*/20 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log" && echo "Sudah ada" || echo "Crontab telah dibuat" && (crontab -l | echo -e "*/20 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log\n*/25 * * * * /usr/share/logstash/bin/logstash -f /etc/logstash/conf.d/zeek.conf") | crontab -
 	echo "Logstash & Machine Learning akan running setiap 20 menit"
 else
 	redis-server --daemonize yes
-	crontab -l | grep -Fq "*/10 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log" && echo "Sudah ada" || echo "Crontab telah dibuat" && (crontab -l | echo -e "MAILTO=""\n*/10 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log\n*/15 * * * * /usr/share/logstash/bin/logstash -f /etc/logstash/conf.d/zeek.conf") | crontab -
+	crontab -l | grep -Fq "*/10 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log" && echo "Sudah ada" || echo "Crontab telah dibuat" && (crontab -l | echo -e "*/10 * * * * cd "$pathslips" && ./slips.py -c slips.conf -f /opt/zeek/logs/current/conn.log\n*/15 * * * * /usr/share/logstash/bin/logstash -f /etc/logstash/conf.d/zeek.conf") | crontab -
 	echo "Logstash & Machine Learning akan running setiap 10 menit"
 fi
 
