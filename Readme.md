@@ -37,9 +37,9 @@ ELK is the acronym for three open source projects: Elasticsearch, Logstash, and 
 Source : https://github.com/elastic
 
 <br>
-<br>
 
 **How to Install**
+--
 Note: Run all this script with superuser (root), to prevent from failing when installing
 
 1. Run install.sh in Install Requirement folder and follow the instructions, it will automatically install 3 of open-source tools.
